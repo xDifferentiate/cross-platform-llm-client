@@ -1,4 +1,4 @@
-name: iOS Build (unsigned IPA)
+name: Build iOS IPA
 
 on:
   push:

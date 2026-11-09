@@ -1,0 +1,12 @@
+name: Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [ ci/ios-build ]
+    paths:
+      - '.github/workflows/smoke.yml'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "ok" && uname -a

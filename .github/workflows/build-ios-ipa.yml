@@ -7,8 +7,8 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-14
-    timeout-minutes: 350
+    runs-on: macos-latest
+    timeout-minutes: 360
     steps:
       - name: Checkout (with submodules)
         uses: actions/checkout@v4

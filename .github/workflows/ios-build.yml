@@ -1,0 +1,74 @@
+name: iOS Build (unsigned IPA)
+
+on:
+  push:
+    branches: [ ci/ios-build ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-15
+    timeout-minutes: 350
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Select Xcode 16.2+
+        run: |
+          ls /Applications | grep -i Xcode || true
+          if [ -d /Applications/Xcode_16.2.app ]; then sudo xcode-select -s /Applications/Xcode_16.2.app; fi
+          xcodebuild -version
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Tooling (cmake, ninja, bazelisk)
+        run: |
+          brew install cmake ninja bazelisk || brew install cmake ninja bazelisk
+          cmake --version
+          ninja --version
+          bazelisk version || true
+          flutter --version
+
+      - name: Cache LiteRT-LM Bazel build
+        uses: actions/cache@v4
+        with:
+          path: /tmp/LiteRTLMMinimal
+          key: litertlm-${{ runner.os }}-v1
+
+      - name: Build llama.cpp iOS static library
+        run: bash local_plugins/llama_flutter_android/scripts/build_llama_ios.sh
+
+      - name: Build LiteRT-LM iOS xcframeworks
+        run: bash local_plugins/flutter_litert_lm/scripts/build_ios_frameworks.sh
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: CocoaPods install
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build unsigned iOS app
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA for AltStore
+        run: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -R Runner.app Payload/
+          zip -r PrivateLM-1.0.7-unsigned.ipa Payload
+          ls -lh PrivateLM-1.0.7-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrivateLM-1.0.7-unsigned-ipa
+          path: build/ios/iphoneos/PrivateLM-1.0.7-unsigned.ipa
+          if-no-files-found: error

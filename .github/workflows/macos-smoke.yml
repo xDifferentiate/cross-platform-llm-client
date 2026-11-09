@@ -1,0 +1,12 @@
+name: macOS Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [ ci/ios-build ]
+    paths:
+      - '.github/workflows/macos-smoke.yml'
+jobs:
+  smoke:
+    runs-on: macos-latest
+    steps:
+      - run: echo "macos ok" && uname -a && sw_vers
